@@ -1,1 +1,32 @@
+# --- Python Basics ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Virtual Environments (Crucial) ---
+venv/
+env/
+.venv/
+.env/
+
+# --- Environment Variables (SECURITY CRITICAL) ---
+# NEVER commit your API keys to GitHub!
 .env
+.flaskenv
+
+# --- Operating System Junk ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+Desktop.ini
+
+# --- IDE / Editor Settings ---
+.vscode/
+.idea/
+*.swp
+
+# --- Supabase / Local Dev ---
+supabase/
