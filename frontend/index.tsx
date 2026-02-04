@@ -7,6 +7,8 @@ import { Toggle } from './components/Toggle';
 import { HeroCarousel } from './components/HeroCarousel';
 import { Destination, DestinationCard } from './components/DestinationCard';
 import { Passport } from './components/Passport';
+import { TripPlanningForm, TripPlan } from './components/TripPlanningForm';
+import { Trips } from './components/Trips';
 
 // --- Types & Interfaces ---
 
@@ -25,7 +27,8 @@ function VoyagerApp() {
   const [loading, setLoading] = useState(true);
   const [personalized, setPersonalized] = useState(false);
   const [savedDestinations, setSavedDestinations] = useState<Destination[]>([]);
-  const [currentView, setCurrentView] = useState<'destinations' | 'passport'>('destinations');
+  const [currentView, setCurrentView] = useState<'destinations' | 'passport' | 'tripForm' | 'trips'>('destinations');
+  const [trips, setTrips] = useState<TripPlan[]>([]);
 
   // Load saved destinations from localStorage on mount
   useEffect(() => {
@@ -44,6 +47,19 @@ function VoyagerApp() {
     localStorage.setItem('savedDestinations', JSON.stringify(savedDestinations));
   }, [savedDestinations]);
 
+  // Load trips from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('voyager-trips');
+    if (stored) {
+      try { setTrips(JSON.parse(stored)); } catch {}
+    }
+  }, []);
+
+  // Save trips to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('voyager-trips', JSON.stringify(trips));
+  }, [trips]);
+
   const toggleSaveDestination = useCallback((dest: Destination) => {
     setSavedDestinations(prev => {
       const isAlreadySaved = prev.some(d => d.id === dest.id);
@@ -53,6 +69,15 @@ function VoyagerApp() {
         return [...prev, dest];
       }
     });
+  }, []);
+
+  const handleTripSubmit = useCallback((trip: TripPlan) => {
+    setTrips(prev => [trip, ...prev]);
+    setCurrentView('trips');
+  }, []);
+
+  const handleTripDelete = useCallback((id: string) => {
+    setTrips(prev => prev.filter(t => t.id !== id));
   }, []);
 
   const loadData = useCallback(async () => {
@@ -118,6 +143,17 @@ function VoyagerApp() {
               </span>
             )}
           </button>
+          <button
+            onClick={() => setCurrentView('trips')}
+            className={`text-sm font-medium transition-colors flex items-center gap-1 ${currentView === 'trips' ? 'text-emerald-600' : 'hover:text-emerald-600'}`}
+          >
+            Trips
+            {trips.length > 0 && (
+              <span className="bg-emerald-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {trips.length}
+              </span>
+            )}
+          </button>
           <a href="#" className="text-sm font-medium hover:text-emerald-600 transition-colors">About</a>
         </div>
 
@@ -125,7 +161,7 @@ function VoyagerApp() {
           <button className="text-slate-400 hover:text-slate-900 transition-colors">
             <Lucide.User className="w-6 h-6" />
           </button>
-          <Button variant="primary" className="hidden sm:flex">Plan Trip</Button>
+          <Button variant="primary" className="hidden sm:flex" onClick={() => setCurrentView('tripForm')}>Plan Trip</Button>
         </div>
       </nav>
 
@@ -196,11 +232,19 @@ function VoyagerApp() {
               )}
             </section>
           </>
-        ) : (
+        ) : currentView === 'passport' ? (
           <Passport
             savedDestinations={savedDestinations}
             onToggleSave={toggleSaveDestination}
             onNavigateToDestinations={() => setCurrentView('destinations')}
+          />
+        ) : currentView === 'tripForm' ? (
+          <TripPlanningForm onSubmit={handleTripSubmit} />
+        ) : (
+          <Trips
+            trips={trips}
+            onDeleteTrip={handleTripDelete}
+            onPlanTrip={() => setCurrentView('tripForm')}
           />
         )}
 
