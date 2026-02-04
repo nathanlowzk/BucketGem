@@ -8,9 +8,10 @@ interface HeroCarouselProps {
   loading: boolean;
   savedDestinations: Destination[];
   onToggleSave: (dest: Destination) => void;
+  onRefresh: () => void;
 }
 
-export function HeroCarousel({ destinations, loading, savedDestinations, onToggleSave }: HeroCarouselProps) {
+export function HeroCarousel({ destinations, loading, savedDestinations, onToggleSave, onRefresh }: HeroCarouselProps) {
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
@@ -69,6 +70,15 @@ export function HeroCarousel({ destinations, loading, savedDestinations, onToggl
           </div>
         );
       })}
+
+      <button
+        onClick={onRefresh}
+        disabled={loading}
+        className="absolute top-6 right-6 z-10 flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <Lucide.RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+        Refresh
+      </button>
 
       <div className="absolute bottom-10 right-10 flex gap-4">
         <button

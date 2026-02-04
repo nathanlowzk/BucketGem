@@ -59,7 +59,7 @@ function VoyagerApp() {
     setLoading(true);
     try {
       // NOW: We call our own Python backend instead of Google directly
-      const response = await fetch('http://127.0.0.1:5001/api/generate-destinations');
+      const response = await fetch('http://127.0.0.1:5001/api/destinations/random');
 
       if (!response.ok) {
         throw new Error('Network response was not ok');
@@ -137,6 +137,7 @@ function VoyagerApp() {
               loading={loading}
               savedDestinations={savedDestinations}
               onToggleSave={toggleSaveDestination}
+              onRefresh={loadData}
             />
 
             <section className="max-w-7xl mx-auto px-6 py-12 md:py-20">
