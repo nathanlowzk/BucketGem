@@ -18,36 +18,107 @@ supabase = create_client(os.environ.get("SUPABASE_URL"), os.environ.get("SUPABAS
 init_db()
 
 # --- DATA: THE SMART MAP ---
+# --- DATA: THE SMART MAP (EXPANDED) ---
 REGION_THEMES = {
     "Japan & East Asia": [
-        "traditional ryokan with private onsen", "neon night markets", "ancient mountaintop temples", 
-        "bamboo forests", "cherry blossom tunnels", "snow-covered villages", "futuristic cityscapes"
+        # --- The Classics ---
+        "traditional ryokan with private onsen in snow", 
+        "neon-lit cyberpunk alleyways in rain", 
+        "ancient mountaintop temples in mist", 
+        "dense arashiyama-style bamboo forests", 
+        "cherry blossom tunnels over quiet rivers", 
+        "snow-covered shirakawa-go thatched villages", 
+        
+        # --- Spiritual & Historic ---
+        "zen rock gardens with moss", 
+        "shinto shrines with thousands of vermilion gates", 
+        "historic wooden post towns (edo period style)", 
+        "majestic himeji-style white castles", 
+        "floating torii gates at high tide", 
+        "serene geisha district streets at dawn",
+        
+        # --- Nature & Landscapes ---
+        "autumn maple leaf valleys with red bridges", 
+        "ancient yakushima cedar forests with mist", 
+        "emerald green tea plantation terraces", 
+        "volcanic calderas with turquoise crater lakes", 
+        "frozen 'snow monster' trees on mountain peaks", 
+        "tottori sand dunes at sunset", 
+        "dramatic coastal cliffs with rope bridges",
+        
+        # --- Seasonal Colors ---
+        "cascading wisteria flower tunnels", 
+        "endless fields of blue nemophila flowers", 
+        "lavender fields with mountain backdrops", 
+        "drift ice on the northern sea",
+        
+        # --- Modern & Niche ---
+        "futuristic skyscrapers at twilight (tokyo style)", 
+        "contemporary art island outdoor sculptures", 
+        "abandoned island industrial ruins", 
+        "retro showa-era vending machine corners", 
+        "canals of kurashiki with weeping willows"
     ],
-    "The Mediterranean": [
-        "colorful cliffside villages", "ancient roman ruins", "sun-drenched vineyards", 
-        "crystal clear coves", "historic canal cities", "medieval hilltop towns"
+    "The Mediterranean (Italy, Greece, Spain, Turkey)": [
+        "colorful cliffside villages (Cinque Terre style)", "crumbling ancient roman ruins at sunset", 
+        "sun-drenched vineyards with cypress trees", "crystal clear turquoise coves", 
+        "historic venetian canals", "medieval stone hilltop towns", "white-washed greek island architecture",
+        "lemon groves on terraced hills", "byzantine mosaics and domes"
     ],
-    "Scandinavia & The Arctic": [
-        "northern lights viewing", "ice hotels", "dramatic fjords", 
-        "glass igloos", "remote viking history", "snowy reindeer safaris"
+    "Northern Europe & Scandinavia": [
+        "northern lights (aurora borealis) over cabins", "sculpted ice hotels", "dramatic misty fjords", 
+        "glass igloos in snow", "remote viking burial mounds", "snowy reindeer forests", 
+        "black sand arctic beaches", "colorful wooden waterfront houses", "geothermal steaming lagoons"
     ],
-    "Southeast Asia": [
-        "floating markets", "limestone karst islands", "emerald jungle waterfalls", 
-        "golden buddhist temples", "rice terrace fields", "bioluminescent beaches"
+    "Southeast Asia (Thailand, Vietnam, Bali, Philippines)": [
+        "floating markets on quiet canals", "towering limestone karsts in emerald water", 
+        "hidden jungle waterfalls", "golden buddhist pagodas", "lush green rice terraces", 
+        "bioluminescent plankton beaches", "overwater bungalows", "ancient overgrown temple ruins",
+        "misty tea plantations"
     ],
-    "South America": [
-        "mystical incan ruins", "massive glaciers", "high-altitude salt flats", 
-        "amazon rainforest lodges", "rainbow mountains", "cloud forests"
+    "South America (Patagonia, Peru, Andes, Brazil)": [
+        "mystical incan ruins in clouds", "massive cracking glaciers", "high-altitude mirror salt flats", 
+        "deep amazon rainforest canopies", "rainbow-colored mountain ridges", "cloud forests with hanging bridges",
+        "colonial plazas with cobblestones", "thundering waterfalls (Iguazu style)", "patagonian granite peaks"
     ],
-    "Africa": [
-        "luxury safari lodges", "vast desert dunes", "migration plains", 
-        "ancient pyramids", "gorilla trekking forests", "spice island beaches"
+    "Africa (Safari, Desert, Coast)": [
+        "luxury tented safari lodges", "endless orange desert dunes", "savanna plains at sunrise", 
+        "ancient egyptian pyramids and sphinx", "misty mountain gorilla forests", "turquoise spice island beaches",
+        "baobab tree avenues", "victoria falls gorges", "moroccan riads with mosaic courtyards"
+    ],
+    "North America (USA, Canada, Mexico)": [
+        "red rock canyons and arches", "misty coastal redwood forests", "autumn foliage in new england", 
+        "glacier-fed turquoise alpine lakes", "historic jazz district streets (empty)", "art deco city skylines",
+        "mayan ruins in jungles", "day of the dead decorated streets", "snowy rocky mountain lodges"
+    ],
+    "Oceania & Pacific (Australia, NZ, Fiji)": [
+        "great barrier reef coral gardens", "red earth outback landscapes", "volcanic black rock coastlines", 
+        "hobbit-style rolling green hills", "secluded white sand atolls", "bioluminescent glowworm caves",
+        "ancient fern forests", "turquoise lagoons with mountain backdrops"
+    ],
+    "Middle East & Central Asia": [
+        "ancient petra-style rock carved cities", "futuristic desert skylines", "blue tiled mosques", 
+        "vast wadi rum desert valleys", "silk road caravanserais", "dead sea salt formations", 
+        "historic souk markets (closed/quiet)", "persian gardens with fountains"
+    ],
+    "UK & Ireland": [
+        "ruined medieval castles on cliffs", "rolling green highlands with mist", "stone circles (Stonehenge style)", 
+        "cozy stone cottages with thatched roofs", "dramatic giant's causeway basalt columns", 
+        "gothic university architecture", "dark hedges tree tunnels"
     ]
 }
 
+# --- REWRITTEN TRAVEL STYLES (Atmosphere-Focused) ---
+# These describe the SCENE, not the PERSON, to keep images empty.
 TRAVEL_STYLES = [
-    "a solo backpacker on a budget", "a couple on an ultra-luxury honeymoon", 
-    "an adrenaline junkie", "a history buff", "a photographer"
+    "rugged and remote budget adventure",   # Replaces "backpacker"
+    "secluded ultra-luxury romantic retreat", # Replaces "honeymooners"
+    "high-adrenaline dangerous landscape",  # Replaces "adrenaline junkie"
+    "ancient historical and archaeological site", # Replaces "history buff"
+    "serene eco-conscious nature sanctuary", # Replaces "eco-tourist"
+    "cinematic editorial photography location", # Replaces "photographer"
+    "peaceful wellness and spiritual escape", # Replaces "wellness seeker"
+    "hidden untouched off-the-beaten-path gem" # Replaces "digital nomad"
 ]
 
 def upload_image(image_bytes, destination_name):
