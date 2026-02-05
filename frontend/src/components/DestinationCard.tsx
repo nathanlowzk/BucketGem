@@ -33,9 +33,19 @@ export function DestinationCard({ dest, isSaved, onToggleSave }: DestinationCard
         >
           <Lucide.Heart className={`w-5 h-5 ${isSaved ? 'fill-current' : ''}`} />
         </button>
-        <div className="absolute bottom-4 left-4 flex gap-2 flex-wrap">
-          {dest.tags.slice(0, 2).map(tag => (
-            <span key={tag} className="px-2 py-1 bg-white/20 backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded">
+        {/* Horizontally scrollable tags container */}
+        <div
+          className="absolute bottom-4 left-4 right-4 flex gap-2 overflow-x-auto scrollbar-hide"
+          style={{
+            scrollbarWidth: 'none',  /* Firefox */
+            msOverflowStyle: 'none'  /* IE/Edge */
+          }}
+        >
+          {dest.tags.map(tag => (
+            <span
+              key={tag}
+              className="px-2 py-1 bg-white/20 backdrop-blur-md text-white text-[10px] uppercase font-bold tracking-wider rounded whitespace-nowrap shrink-0"
+            >
               {tag}
             </span>
           ))}

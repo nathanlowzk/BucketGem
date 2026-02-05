@@ -151,10 +151,33 @@ function VoyagerApp() {
     setTrips(prev => prev.filter(t => t.id !== id));
   }, []);
 
-  const loadData = useCallback(async () => {
+  // Calculate tag frequency from saved destinations
+  // Returns an object like { "beach": 3, "mountain": 2, "temple": 1 }
+  const tagFrequency = useMemo(() => {
+    const frequency: Record<string, number> = {};
+
+    savedDestinations.forEach((dest) => {
+      dest.tags.forEach((tag) => {
+        // Normalize tag to lowercase for consistent counting
+        const normalizedTag = tag.toLowerCase();
+        frequency[normalizedTag] = (frequency[normalizedTag] || 0) + 1;
+      });
+    });
+
+    return frequency;
+  }, [savedDestinations]);
+
+  // Get the unique tags sorted by frequency (most common first)
+  const topTags = useMemo(() => {
+    return Object.entries(tagFrequency)
+      .sort((a, b) => b[1] - a[1])  // Sort by count descending
+      .map(([tag]) => tag);          // Extract just the tag names
+  }, [tagFrequency]);
+
+  // Load random destinations (default behavior)
+  const loadRandomDestinations = useCallback(async () => {
     setLoading(true);
     try {
-      // NOW: We call our own Python backend instead of Google directly
       const response = await fetch('http://127.0.0.1:5001/api/destinations/random');
 
       if (!response.ok) {
@@ -177,14 +200,68 @@ function VoyagerApp() {
     }
   }, []);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  // Load personalized destinations based on user's saved tags
+  const loadPersonalizedDestinations = useCallback(async (tags: string[]) => {
+    setLoading(true);
+    try {
+      // Send tags as query parameter (comma-separated)
+      const tagsParam = encodeURIComponent(tags.join(','));
+      const response = await fetch(`http://127.0.0.1:5001/api/destinations/personalized?tags=${tagsParam}`);
 
-  const displayedDestinations = useMemo(() => {
-    if (!personalized) return destinations;
-    return destinations.filter(d => d.isPersonalized);
-  }, [destinations, personalized]);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const data = await response.json();
+
+      // Add unique IDs to the data coming from Python
+      const formattedData = data.map((d: any, i: number) => ({
+        ...d,
+        id: `dest-${i}-${Date.now()}`
+      }));
+
+      setDestinations(formattedData);
+    } catch (err) {
+      console.error("Failed to fetch personalized destinations:", err);
+      showToast("Failed to load personalized destinations. Please try again.", 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Handle the personalized toggle
+  const handlePersonalizedToggle = useCallback(() => {
+    if (!personalized) {
+      // User is trying to turn ON personalization
+      // Check if they have at least 5 unique tags from saved destinations
+      const uniqueTagCount = topTags.length;
+
+      if (uniqueTagCount < 5) {
+        showToast(
+          `You need to save more destinations first! You have ${uniqueTagCount} unique tags, but need at least 5.`,
+          'error'
+        );
+        return; // Don't toggle
+      }
+
+      // They have enough tags - turn on personalization and fetch personalized data
+      setPersonalized(true);
+      loadPersonalizedDestinations(topTags.slice(0, 10)); // Use top 10 tags
+    } else {
+      // User is turning OFF personalization - go back to random
+      setPersonalized(false);
+      loadRandomDestinations();
+    }
+  }, [personalized, topTags, loadPersonalizedDestinations, loadRandomDestinations]);
+
+  // Load random destinations on initial mount
+  useEffect(() => {
+    loadRandomDestinations();
+  }, [loadRandomDestinations]);
+
+  // displayedDestinations is now just the destinations array
+  // (filtering is done server-side)
+  const displayedDestinations = destinations;
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-emerald-100">
@@ -287,7 +364,14 @@ function VoyagerApp() {
               loading={loading}
               savedDestinations={savedDestinations}
               onToggleSave={toggleSaveDestination}
-              onRefresh={loadData}
+              onRefresh={() => {
+                // Refresh with the appropriate data based on current mode
+                if (personalized) {
+                  loadPersonalizedDestinations(topTags.slice(0, 10));
+                } else {
+                  loadRandomDestinations();
+                }
+              }}
             />
 
             <section className="max-w-7xl mx-auto px-6 py-12 md:py-20">
@@ -306,10 +390,13 @@ function VoyagerApp() {
                   <Toggle
                     label="Personalized for Me"
                     active={personalized}
-                    onToggle={() => setPersonalized(!personalized)}
+                    onToggle={handlePersonalizedToggle}
                   />
                   <p className="text-xs text-slate-400 italic">
-                    {personalized ? `Showing destinations matching your interests` : 'Showing the global trending collection'}
+                    {personalized
+                      ? `Showing destinations matching your ${topTags.length} saved tags`
+                      : 'Showing the global trending collection'
+                    }
                   </p>
                 </div>
               </div>
@@ -438,6 +525,11 @@ function VoyagerApp() {
         }
         .animate-slide-in {
           animation: slide-in 0.3s ease-out;
+        }
+
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
         }
       `}</style>
     </div>
