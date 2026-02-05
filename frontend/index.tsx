@@ -31,7 +31,7 @@ function VoyagerApp() {
   const [loading, setLoading] = useState(true);
   const [personalized, setPersonalized] = useState(false);
   const [savedDestinations, setSavedDestinations] = useState<Destination[]>([]);
-  const [currentView, setCurrentView] = useState<'destinations' | 'passport' | 'tripForm' | 'trips' | 'signIn' | 'registration'>('destinations');
+  const [currentView, setCurrentView] = useState<'explore' | 'passport' | 'tripForm' | 'trips' | 'signIn' | 'registration'>('explore');
   const [trips, setTrips] = useState<TripPlan[]>([]);
 
   // Track the currently logged-in user (null means not logged in)
@@ -94,7 +94,7 @@ function VoyagerApp() {
   // Handle user sign out
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    setCurrentView('destinations');
+    setCurrentView('explore');
   };
 
   useEffect(() => {
@@ -303,10 +303,10 @@ function VoyagerApp() {
 
         <div className="hidden md:flex items-center gap-8">
           <button
-            onClick={() => setCurrentView('destinations')}
-            className={`text-sm font-medium transition-colors ${currentView === 'destinations' ? 'text-emerald-600' : 'hover:text-emerald-600'}`}
+            onClick={() => setCurrentView('explore')}
+            className={`text-sm font-medium transition-colors ${currentView === 'explore' ? 'text-emerald-600' : 'hover:text-emerald-600'}`}
           >
-            Destinations
+            Explore
           </button>
           <button
             onClick={() => setCurrentView('passport')}
@@ -357,7 +357,7 @@ function VoyagerApp() {
       </nav>
 
       <main className="pt-20">
-        {currentView === 'destinations' ? (
+        {currentView === 'explore' ? (
           <>
             <HeroCarousel
               destinations={destinations}
@@ -437,7 +437,7 @@ function VoyagerApp() {
           <Passport
             savedDestinations={savedDestinations}
             onToggleSave={toggleSaveDestination}
-            onNavigateToDestinations={() => setCurrentView('destinations')}
+            onNavigateToDestinations={() => setCurrentView('explore')}
           />
         ) : currentView === 'tripForm' ? (
           <TripPlanningForm onSubmit={handleTripSubmit} />
@@ -446,7 +446,7 @@ function VoyagerApp() {
             onSignIn={() => {
               // After successful sign in, navigate back to destinations
               // The user state will be automatically updated by the auth listener
-              setCurrentView('destinations');
+              setCurrentView('explore');
             }}
             onNavigateToRegister={() => setCurrentView('registration')}
           />
@@ -456,7 +456,7 @@ function VoyagerApp() {
               // After successful registration, navigate back to destinations
               // Note: If email confirmation is enabled in Supabase,
               // the user won't be logged in until they confirm their email
-              setCurrentView('destinations');
+              setCurrentView('explore');
             }}
             onNavigateToSignIn={() => setCurrentView('signIn')}
           />
