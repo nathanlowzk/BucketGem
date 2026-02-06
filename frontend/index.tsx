@@ -251,6 +251,40 @@ function VoyagerApp() {
     setTrips(prev => prev.filter(t => t.id !== id));
   }, []);
 
+  // Handle editing a trip - loads trip data into form cache and navigates to form
+  const handleEditTrip = useCallback((trip: TripPlan) => {
+    if (!user) return;
+
+    // Get the month and year from the trip's start date for the calendar
+    const startDateObj = new Date(trip.startDate + 'T00:00:00');
+
+    // Create form cache data from the trip
+    const formCacheData = {
+      destination: trip.destination,
+      specificDestinations: trip.specificDestinations || [],
+      startDate: trip.startDate,
+      endDate: trip.endDate,
+      calMonth: startDateObj.getMonth(),
+      calYear: startDateObj.getFullYear(),
+      currency: trip.currency,
+      budgetAmount: trip.budgetAmount,
+      companions: trip.companions,
+      numberOfPeople: trip.numberOfPeople || 2,
+      selectedActivities: trip.activities,
+      savedAt: Date.now(),
+    };
+
+    // Save to localStorage with the user's cache key
+    const cacheKey = `voyager-trip-form-cache_${user.id}`;
+    localStorage.setItem(cacheKey, JSON.stringify(formCacheData));
+
+    // Delete the old trip since we're editing it
+    setTrips(prev => prev.filter(t => t.id !== trip.id));
+
+    // Navigate to the trip form
+    setCurrentView('tripForm');
+  }, [user]);
+
   // Calculate tag frequency from saved destinations
   // Returns an object like { "beach": 3, "mountain": 2, "temple": 1 }
   const tagFrequency = useMemo(() => {
@@ -681,6 +715,7 @@ function VoyagerApp() {
             trips={trips}
             onDeleteTrip={handleTripDelete}
             onPlanTrip={() => setCurrentView('tripForm')}
+            onEditTrip={handleEditTrip}
           />
         )}
 

@@ -32,7 +32,9 @@ export interface TripPlan {
   endDate: string;
   currency: string;
   budgetRange: string;
+  budgetAmount: number; // Raw budget amount for calculations
   companions: string;
+  numberOfPeople?: number; // Number of people traveling (for couple/family/friends)
   activities: string[];
   specificDestinations: SpecificDestination[];
   createdAt: string;
@@ -369,6 +371,7 @@ interface FormCache {
   currency: string;
   budgetAmount: number;
   companions: string;
+  numberOfPeople: number;
   selectedActivities: string[];
   savedAt: number;
 }
@@ -414,6 +417,7 @@ export function TripPlanningForm({ onSubmit, savedDestinations, googleMapsApiKey
 
   // Field 4
   const [companions, setCompanions] = useState('');
+  const [numberOfPeople, setNumberOfPeople] = useState(2);
 
   // Field 5
   const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
@@ -433,6 +437,7 @@ export function TripPlanningForm({ onSubmit, savedDestinations, googleMapsApiKey
     setCurrency('SGD');
     setBudgetAmount(5000);
     setCompanions('');
+    setNumberOfPeople(2);
     setSelectedActivities([]);
     setIsInitialized(false);
 
@@ -454,6 +459,7 @@ export function TripPlanningForm({ onSubmit, savedDestinations, googleMapsApiKey
           setCurrency(data.currency || 'SGD');
           setBudgetAmount(data.budgetAmount ?? 5000);
           setCompanions(data.companions || '');
+          setNumberOfPeople(data.numberOfPeople ?? 2);
           setSelectedActivities(data.selectedActivities || []);
         }
       }
@@ -477,6 +483,7 @@ export function TripPlanningForm({ onSubmit, savedDestinations, googleMapsApiKey
       currency,
       budgetAmount,
       companions,
+      numberOfPeople,
       selectedActivities,
       savedAt: Date.now(),
     };
@@ -486,7 +493,7 @@ export function TripPlanningForm({ onSubmit, savedDestinations, googleMapsApiKey
     } catch (err) {
       console.error('Failed to save form cache:', err);
     }
-  }, [isInitialized, cacheKey, destination, specificDestinations, startDate, endDate, calMonth, calYear, currency, budgetAmount, companions, selectedActivities]);
+  }, [isInitialized, cacheKey, destination, specificDestinations, startDate, endDate, calMonth, calYear, currency, budgetAmount, companions, numberOfPeople, selectedActivities]);
 
   // Clear form cache
   const clearFormCache = () => {
@@ -702,7 +709,9 @@ export function TripPlanningForm({ onSubmit, savedDestinations, googleMapsApiKey
       endDate: endDate!,
       currency,
       budgetRange: getBudgetRangeString(),
+      budgetAmount,
       companions,
+      numberOfPeople: companions !== 'solo' ? numberOfPeople : undefined,
       activities: selectedActivities,
       specificDestinations,
       createdAt: new Date().toISOString(),
@@ -981,7 +990,62 @@ export function TripPlanningForm({ onSubmit, savedDestinations, googleMapsApiKey
           )}
         </div>
 
-        {/* Field 3: Budget */}
+        {/* Field 3: Travel Companions */}
+        <div>
+          <label className={sectionLabel}>Who do you plan on traveling with on your next adventure?</label>
+          <div className="flex flex-wrap gap-3">
+            {COMPANIONS.map(c => {
+              const Icon = c.icon;
+              return (
+                <button
+                  key={c.value}
+                  onClick={() => {
+                    setCompanions(c.value);
+                    // Set default number of people based on selection
+                    if (c.value === 'couple') setNumberOfPeople(2);
+                    else if (c.value === 'family') setNumberOfPeople(4);
+                    else if (c.value === 'friends') setNumberOfPeople(3);
+                  }}
+                  className={`${pillBase} ${companions === c.value ? pillActive : pillInactive}`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {c.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Number of people input - shown for family or friends (couple is fixed at 2) */}
+          {companions && companions !== 'solo' && companions !== 'couple' && (
+            <div className="mt-4 flex items-center gap-4">
+              <div className="flex items-center gap-2 text-slate-600">
+                <Lucide.Users className="w-4 h-4 text-slate-400" />
+                <span className="text-sm">Number of people:</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setNumberOfPeople(prev => Math.max(2, prev - 1))}
+                  className="w-8 h-8 rounded-full border-2 border-slate-200 flex items-center justify-center hover:border-emerald-500 hover:bg-emerald-50 transition-all"
+                >
+                  <Lucide.Minus className="w-4 h-4 text-slate-600" />
+                </button>
+                <span className="w-8 text-center text-lg font-medium text-slate-800">{numberOfPeople}</span>
+                <button
+                  onClick={() => setNumberOfPeople(prev => Math.min(20, prev + 1))}
+                  className="w-8 h-8 rounded-full border-2 border-slate-200 flex items-center justify-center hover:border-emerald-500 hover:bg-emerald-50 transition-all"
+                >
+                  <Lucide.Plus className="w-4 h-4 text-slate-600" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {fieldHasError('companions') && (
+            <p className="text-rose-500 text-xs mt-2 ml-4">Please select who you're traveling with</p>
+          )}
+        </div>
+
+        {/* Field 4: Budget */}
         <div>
           <label className={sectionLabel}>What is your budget?</label>
           <div className="flex flex-col gap-6">
@@ -1058,29 +1122,6 @@ export function TripPlanningForm({ onSubmit, savedDestinations, googleMapsApiKey
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Field 4: Travel Companions */}
-        <div>
-          <label className={sectionLabel}>Who do you plan on traveling with on your next adventure?</label>
-          <div className="flex flex-wrap gap-3">
-            {COMPANIONS.map(c => {
-              const Icon = c.icon;
-              return (
-                <button
-                  key={c.value}
-                  onClick={() => setCompanions(c.value)}
-                  className={`${pillBase} ${companions === c.value ? pillActive : pillInactive}`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {c.label}
-                </button>
-              );
-            })}
-          </div>
-          {fieldHasError('companions') && (
-            <p className="text-rose-500 text-xs mt-2 ml-4">Please select who you're traveling with</p>
-          )}
         </div>
 
         {/* Field 5: Activities */}
