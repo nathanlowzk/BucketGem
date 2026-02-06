@@ -33,6 +33,7 @@ function VoyagerApp() {
   const [savedDestinations, setSavedDestinations] = useState<Destination[]>([]);
   const [currentView, setCurrentView] = useState<'explore' | 'passport' | 'tripForm' | 'trips' | 'signIn' | 'registration'>('explore');
   const [trips, setTrips] = useState<TripPlan[]>([]);
+  const [editingTripId, setEditingTripId] = useState<string | null>(null);
 
   // Track the currently logged-in user (null means not logged in)
   const [user, setUser] = useState<User | null>(null);
@@ -166,7 +167,11 @@ function VoyagerApp() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [currentView]);
+    // Clear editingTripId when navigating away from the trip form
+    if (currentView !== 'tripForm' && editingTripId) {
+      setEditingTripId(null);
+    }
+  }, [currentView, editingTripId]);
 
   // Load saved destinations from localStorage when user changes
   // Uses user-specific key so each user has their own saved destinations
@@ -243,9 +248,14 @@ function VoyagerApp() {
   }, [user]);
 
   const handleTripSubmit = useCallback((trip: TripPlan) => {
+    // If editing an existing trip, remove the old one first
+    if (editingTripId) {
+      setTrips(prev => prev.filter(t => t.id !== editingTripId));
+      setEditingTripId(null);
+    }
     setTrips(prev => [trip, ...prev]);
     setCurrentView('trips');
-  }, []);
+  }, [editingTripId]);
 
   const handleTripDelete = useCallback((id: string) => {
     setTrips(prev => prev.filter(t => t.id !== id));
@@ -278,8 +288,8 @@ function VoyagerApp() {
     const cacheKey = `voyager-trip-form-cache_${user.id}`;
     localStorage.setItem(cacheKey, JSON.stringify(formCacheData));
 
-    // Delete the old trip since we're editing it
-    setTrips(prev => prev.filter(t => t.id !== trip.id));
+    // Track which trip we're editing (don't delete it yet - only delete on save)
+    setEditingTripId(trip.id);
 
     // Navigate to the trip form
     setCurrentView('tripForm');

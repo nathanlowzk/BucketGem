@@ -1151,7 +1151,7 @@ export function TripPlanningForm({ onSubmit, savedDestinations, googleMapsApiKey
         {/* Submit */}
         <div className="flex justify-center pt-4">
           <Button onClick={handleSubmit} className="py-4 px-12 text-lg">
-            Submit Trip Plan
+            Save Trip Plan
           </Button>
         </div>
       </div>
