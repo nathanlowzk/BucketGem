@@ -154,7 +154,7 @@ def generate_single_destination():
                 f"that features {c_theme}. It must be perfect for {c_style}. "
                 "Do not invent places. Return JSON with fields: name, location, description, tags, imagePrompt, isPersonalized, country, region. "
                 "The 'country' field must be the exact country name (e.g., 'Japan', 'Thailand', 'Italy'). "
-                "The 'region' field must be one of: 'Oceania', 'East Asia', 'Middle East', 'South East Asia', 'Europe', 'North America', 'South America', 'Central America', 'Africa'."
+                "The 'region' field must be at least one of (where applicable): 'Oceania', 'East Asia', 'Middle East', 'South East Asia', 'Europe', 'North America', 'South America', 'Central America', 'Africa'."
             )
 
             response = client.models.generate_content(
