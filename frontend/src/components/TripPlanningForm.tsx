@@ -1,7 +1,15 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+/// <reference types="@types/google.maps" />
+import { useState, useRef, useEffect, useCallback } from 'react';
 import * as Lucide from 'lucide-react';
 import { Button } from './Button';
 import { Destination } from './DestinationCard';
+
+// Extend the Window interface to include Google Maps
+declare global {
+  interface Window {
+    google?: typeof google;
+  }
+}
 
 // --- Budget slider config ---
 const BUDGET_MAX = 10000;
