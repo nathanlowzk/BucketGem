@@ -148,6 +148,9 @@ function VoyagerApp() {
   // Handle user sign out
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    // Clear user-specific data from state
+    setSavedDestinations([]);
+    setTrips([]);
     setCurrentView('explore');
   };
 
@@ -155,35 +158,63 @@ function VoyagerApp() {
     window.scrollTo(0, 0);
   }, [currentView]);
 
-  // Load saved destinations from localStorage on mount
+  // Load saved destinations from localStorage when user changes
+  // Uses user-specific key so each user has their own saved destinations
   useEffect(() => {
-    const saved = localStorage.getItem('savedDestinations');
-    if (saved) {
-      try {
-        setSavedDestinations(JSON.parse(saved));
-      } catch (err) {
-        console.error('Failed to parse saved destinations:', err);
+    if (user) {
+      // User is logged in - load their saved destinations
+      const storageKey = `savedDestinations_${user.id}`;
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        try {
+          setSavedDestinations(JSON.parse(saved));
+        } catch (err) {
+          console.error('Failed to parse saved destinations:', err);
+          setSavedDestinations([]);
+        }
+      } else {
+        setSavedDestinations([]);
       }
+    } else {
+      // User is logged out - clear saved destinations
+      setSavedDestinations([]);
     }
-  }, []);
+  }, [user?.id]); // Re-run when user ID changes
 
-  // Save to localStorage whenever savedDestinations changes
+  // Save to localStorage whenever savedDestinations changes (only if user is logged in)
   useEffect(() => {
-    localStorage.setItem('savedDestinations', JSON.stringify(savedDestinations));
-  }, [savedDestinations]);
-
-  // Load trips from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem('voyager-trips');
-    if (stored) {
-      try { setTrips(JSON.parse(stored)); } catch {}
+    if (user) {
+      const storageKey = `savedDestinations_${user.id}`;
+      localStorage.setItem(storageKey, JSON.stringify(savedDestinations));
     }
-  }, []);
+  }, [savedDestinations, user?.id]);
 
-  // Save trips to localStorage whenever they change
+  // Load trips from localStorage when user changes
   useEffect(() => {
-    localStorage.setItem('voyager-trips', JSON.stringify(trips));
-  }, [trips]);
+    if (user) {
+      const storageKey = `voyager-trips_${user.id}`;
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        try {
+          setTrips(JSON.parse(stored));
+        } catch {
+          setTrips([]);
+        }
+      } else {
+        setTrips([]);
+      }
+    } else {
+      setTrips([]);
+    }
+  }, [user?.id]);
+
+  // Save trips to localStorage whenever they change (only if user is logged in)
+  useEffect(() => {
+    if (user) {
+      const storageKey = `voyager-trips_${user.id}`;
+      localStorage.setItem(storageKey, JSON.stringify(trips));
+    }
+  }, [trips, user?.id]);
 
   const toggleSaveDestination = useCallback((dest: Destination) => {
     setSavedDestinations(prev => {
