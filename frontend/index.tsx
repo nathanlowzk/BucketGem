@@ -154,6 +154,15 @@ function VoyagerApp() {
     setCurrentView('explore');
   };
 
+  // Helper function for actions that require authentication
+  const requireAuth = (action: () => void, message = "Please sign in first") => {
+    if (!user) {
+      showToast(message, 'error');
+      return;
+    }
+    action();
+  };
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentView]);
@@ -217,6 +226,11 @@ function VoyagerApp() {
   }, [trips, user?.id]);
 
   const toggleSaveDestination = useCallback((dest: Destination) => {
+    if (!user) {
+      showToast("Please sign in to save destinations", 'error');
+      return;
+    }
+
     setSavedDestinations(prev => {
       const isAlreadySaved = prev.some(d => d.id === dest.id);
       if (isAlreadySaved) {
@@ -225,7 +239,7 @@ function VoyagerApp() {
         return [...prev, dest];
       }
     });
-  }, []);
+  }, [user]);
 
   const handleTripSubmit = useCallback((trip: TripPlan) => {
     setTrips(prev => [trip, ...prev]);
@@ -505,17 +519,17 @@ function VoyagerApp() {
             Explore
           </button>
           <button
-            onClick={() => setCurrentView('passport')}
+            onClick={() => requireAuth(() => setCurrentView('passport'), "Please sign in to view your Passport")}
             className={`text-sm font-medium transition-colors flex items-center gap-1 ${currentView === 'passport' ? 'text-emerald-600' : 'hover:text-emerald-600'}`}
           >
             Passport
           </button>
           <button
-            onClick={() => setCurrentView('trips')}
+            onClick={() => requireAuth(() => setCurrentView('trips'), "Please sign in to view your Trips")}
             className={`text-sm font-medium transition-colors flex items-center gap-1 ${currentView === 'trips' ? 'text-emerald-600' : 'hover:text-emerald-600'}`}
           >
             Trips
-            {trips.length > 0 && (
+            {user && trips.length > 0 && (
               <span className="bg-emerald-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
                 {trips.length}
               </span>
@@ -543,7 +557,7 @@ function VoyagerApp() {
               Sign In
             </Button>
           )}
-          <Button variant="primary" className="hidden sm:flex" onClick={() => setCurrentView('tripForm')}>Plan Trip</Button>
+          <Button variant="primary" className="hidden sm:flex" onClick={() => requireAuth(() => setCurrentView('tripForm'), "Please sign in to plan a trip")}>Plan Trip</Button>
         </div>
       </nav>
 
