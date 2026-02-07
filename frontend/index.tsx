@@ -13,6 +13,7 @@ import { TripPlanningForm, TripPlan } from './src/components/TripPlanningForm';
 import { Trips } from './src/components/Trips';
 import { SignIn } from './src/auth/sign_in';
 import { Registration } from './src/auth/registration';
+import { About } from './src/components/About';
 
 // --- Types & Interfaces ---
 
@@ -31,7 +32,7 @@ function VoyagerApp() {
   const [loading, setLoading] = useState(true);
   const [personalized, setPersonalized] = useState(false);
   const [savedDestinations, setSavedDestinations] = useState<Destination[]>([]);
-  const [currentView, setCurrentView] = useState<'explore' | 'passport' | 'tripForm' | 'trips' | 'signIn' | 'registration'>('explore');
+  const [currentView, setCurrentView] = useState<'explore' | 'passport' | 'tripForm' | 'trips' | 'signIn' | 'registration' | 'about'>('explore');
   const [trips, setTrips] = useState<TripPlan[]>([]);
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
 
@@ -583,7 +584,12 @@ function VoyagerApp() {
           >
             Trips
           </button>
-          <a href="#" className="text-sm font-medium hover:text-emerald-600 transition-colors">About</a>
+          <button
+            onClick={() => setCurrentView('about')}
+            className={`text-sm font-medium transition-colors ${currentView === 'about' ? 'text-emerald-600' : 'hover:text-emerald-600'}`}
+          >
+            About
+          </button>
         </div>
 
         <div className="flex items-center gap-6">
@@ -724,6 +730,8 @@ function VoyagerApp() {
             }}
             onNavigateToSignIn={() => setCurrentView('signIn')}
           />
+        ) : currentView === 'about' ? (
+          <About />
         ) : (
           <Trips
             trips={trips}
