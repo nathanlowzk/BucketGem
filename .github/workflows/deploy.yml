@@ -1,0 +1,66 @@
+name: Deploy to Azure Container Apps
+
+on:
+  push:
+    branches:
+      - main
+      - deployment-setup-nathan  # <--- Triggers on your new branch!
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Log in to Azure Container Registry
+        uses: azure/docker-login@v1
+        with:
+          login-server: nathanvoyagerpersonal.azurecr.io
+          username: ${{ secrets.nathanvoyagerpersonal }}
+          password: ${{ secrets.2nE6YhMW2MILxvYYG8Y7lbisSmcjWFML3AkDQ3UPFLF8H99exZbNJQQJ99CBAC3pKaREqg7NAAACAZCRc5Xq }}
+
+      # --- BACKEND ---
+      - name: Build and Push Backend
+        run: |
+          docker build --platform linux/amd64 -t nathanvoyagerpersonal.azurecr.io/backend:${{ github.sha }} ./backend
+          docker push nathanvoyagerpersonal.azurecr.io/backend:${{ github.sha }}
+
+      - name: Deploy Backend
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          appSourcePath: ${{ github.workspace }}/backend
+          acrName: nathanvoyagerpersonal
+          containerAppName: backend-api
+          resourceGroup: Voyager-rg
+          imageToDeploy: nathanvoyagerpersonal.azurecr.io/backend:${{ github.sha }}
+
+      # --- FRONTEND ---
+      - name: Build and Push Frontend
+        run: |
+          docker build --platform linux/amd64 \
+            --build-arg VITE_API_URL=https://backend-api.delightfulmoss-756fdac1.eastasia.azurecontainerapps.io \
+            --build-arg VITE_SUPABASE_URL=https://cborhugaaafqrgyfhgak.supabase.co
+            --build-arg VITE_SUPABASE_ANON_KEY=${{ secrets.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNib3JodWdhYWFmcXJneWZoZ2FrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMjU3NzYsImV4cCI6MjA4NTcwMTc3Nn0.cTl7VWQVDC6XNqOUANM9UrmjeGlmD3piVCQzSXxf3sI }} \
+            --build-arg VITE_GOOGLE_MAPS_API_KEY=${{ secrets.AIzaSyD7ltVf3DIbGGb9-0M3nDjEqFQLxCpLBOk }} \
+            -t nathanvoyagerpersonal.azurecr.io/frontend:${{ github.sha }} ./frontend
+          docker push nathanvoyagerpersonal.azurecr.io/frontend:${{ github.sha }}
+
+      - name: Deploy Frontend
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          appSourcePath: ${{ github.workspace }}/frontend
+          acrName: nathanvoyagerpersonal
+          containerAppName: frontend-app
+          resourceGroup: Voyager-rg
+          imageToDeploy: nathanvoyagerpersonal.azurecr.io/frontend:${{ github.sha }}
