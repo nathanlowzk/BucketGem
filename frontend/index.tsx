@@ -733,25 +733,27 @@ function VoyagerApp() {
           />
         )}
 
-        <section className="bg-slate-50 py-24 px-6 mt-12 overflow-hidden relative">
-          <div className="max-w-4xl mx-auto text-center relative z-10">
-            <div className="flex items-center justify-center gap-2 text-emerald-600 font-bold tracking-widest text-[10px] uppercase mb-6">
-              <Lucide.Mail className="w-4 h-4" />
-              Weekly Newsletter
+        {currentView === 'explore' && (
+          <section className="bg-slate-50 py-24 px-6 mt-12 overflow-hidden relative">
+            <div className="max-w-4xl mx-auto text-center relative z-10">
+              <div className="flex items-center justify-center gap-2 text-emerald-600 font-bold tracking-widest text-[10px] uppercase mb-6">
+                <Lucide.Mail className="w-4 h-4" />
+                Weekly Newsletter
+              </div>
+              <h2 className="text-4xl md:text-5xl font-serif mb-6 leading-tight">
+                Get personalised destinations delivered to your inbox
+              </h2>
+              <p className="text-lg text-slate-500 mb-10 font-light max-w-2xl mx-auto">
+                Every week, we'll send you handpicked travel spots tailored to your interests. No spam, just wanderlust.
+              </p>
+              <Button onClick={handleSubscribe} className="py-4 mx-auto text-lg">
+                Subscribe
+              </Button>
             </div>
-            <h2 className="text-4xl md:text-5xl font-serif mb-6 leading-tight">
-              Get personalised destinations delivered to your inbox
-            </h2>
-            <p className="text-lg text-slate-500 mb-10 font-light max-w-2xl mx-auto">
-              Every week, we'll send you handpicked travel spots tailored to your interests. No spam, just wanderlust.
-            </p>
-            <Button onClick={handleSubscribe} className="py-4 mx-auto text-lg">
-              Subscribe
-            </Button>
-          </div>
-          <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-100 rounded-full blur-[120px] opacity-30 -mr-48 -mt-48" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-100 rounded-full blur-[120px] opacity-30 -ml-48 -mb-48" />
-        </section>
+            <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-100 rounded-full blur-[120px] opacity-30 -mr-48 -mt-48" />
+            <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-100 rounded-full blur-[120px] opacity-30 -ml-48 -mb-48" />
+          </section>
+        )}
       </main>
 
       <footer className="py-12 px-6 md:px-12 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-8">
