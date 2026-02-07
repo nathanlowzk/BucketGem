@@ -565,7 +565,7 @@ function VoyagerApp() {
           <span className="text-2xl font-serif tracking-tight">Voyager.</span>
         </div>
 
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
           <button
             onClick={() => setCurrentView('explore')}
             className={`text-sm font-medium transition-colors ${currentView === 'explore' ? 'text-emerald-600' : 'hover:text-emerald-600'}`}
