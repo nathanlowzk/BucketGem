@@ -27,8 +27,8 @@ jobs:
         uses: azure/docker-login@v1
         with:
           login-server: nathanvoyagerpersonal.azurecr.io
-          username: ${{ secrets.nathanvoyagerpersonal }}
-          password: ${{ secrets.2nE6YhMW2MILxvYYG8Y7lbisSmcjWFML3AkDQ3UPFLF8H99exZbNJQQJ99CBAC3pKaREqg7NAAACAZCRc5Xq }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
 
       # --- BACKEND ---
       - name: Build and Push Backend
