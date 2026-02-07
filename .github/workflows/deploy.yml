@@ -39,6 +39,7 @@ jobs:
       - name: Deploy Backend
         uses: azure/container-apps-deploy-action@v1
         with:
+          appSourcePath: ${{ github.workspace }}/backend
           acrName: nathanvoyagerpersonal
           containerAppName: backend-api
           resourceGroup: Voyager-rg
@@ -56,9 +57,8 @@ jobs:
           docker push nathanvoyagerpersonal.azurecr.io/frontend:${{ github.sha }}
 
       - name: Deploy Frontend
-        uses: azure/container-apps-deploy-action@v1
-        with:
-          acrName: nathanvoyagerpersonal
-          containerAppName: frontend-app
-          resourceGroup: Voyager-rg
-          imageToDeploy: nathanvoyagerpersonal.azurecr.io/frontend:${{ github.sha }}
+        run: |
+          az containerapp update \
+            --name frontend-app \
+            --resource-group Voyager-rg \
+            --image nathanvoyagerpersonal.azurecr.io/frontend:${{ github.sha }}
