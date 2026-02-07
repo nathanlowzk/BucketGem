@@ -261,6 +261,15 @@ function VoyagerApp() {
     setTrips(prev => prev.filter(t => t.id !== id));
   }, []);
 
+  // Start a new trip - clears form cache and navigates to the form
+  const handleNewTrip = useCallback(() => {
+    if (user) {
+      const cacheKey = `voyager-trip-form-cache_${user.id}`;
+      localStorage.removeItem(cacheKey);
+    }
+    setCurrentView('tripForm');
+  }, [user]);
+
   // Handle editing a trip - loads trip data into form cache and navigates to form
   const handleEditTrip = useCallback((trip: TripPlan) => {
     if (!user) return;
@@ -602,7 +611,7 @@ function VoyagerApp() {
               Sign In
             </Button>
           )}
-          <Button variant="primary" className="hidden sm:flex" onClick={() => requireAuth(() => setCurrentView('tripForm'), "Please sign in to plan a trip")}>Plan Trip</Button>
+          <Button variant="primary" className="hidden sm:flex" onClick={() => requireAuth(handleNewTrip, "Please sign in to plan a trip")}>Plan Trip</Button>
         </div>
       </nav>
 
@@ -724,7 +733,7 @@ function VoyagerApp() {
           <Trips
             trips={trips}
             onDeleteTrip={handleTripDelete}
-            onPlanTrip={() => setCurrentView('tripForm')}
+            onPlanTrip={handleNewTrip}
             onEditTrip={handleEditTrip}
           />
         )}
