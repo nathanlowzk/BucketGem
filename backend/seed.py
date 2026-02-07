@@ -3,11 +3,12 @@ import random
 import os
 import json
 import uuid
+from difflib import SequenceMatcher
 from pathlib import Path
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
-from services.database import init_db, add_destination
+from services.database import init_db, add_destination, get_all_destination_names
 from supabase import create_client
 
 load_dotenv()
@@ -27,6 +28,29 @@ REGION_THEMES = theme_data["region_themes"]
 TRAVEL_STYLES = theme_data["travel_styles"]
 
 
+DUPLICATE_THRESHOLD = 0.75  # Similarity ratio above this = duplicate
+
+def normalize_name(name: str) -> str:
+    """Normalize a destination name for comparison: lowercase, strip punctuation, sort words."""
+    import re
+    name = re.sub(r'[^\w\s]', '', name.lower())
+    return ' '.join(sorted(name.split()))
+
+def is_duplicate(new_name: str, existing_entries: list[dict]) -> str | None:
+    """
+    Check if a new destination name is a fuzzy duplicate of any existing name.
+    existing_entries: list of {"name": ..., "country": ...} dicts.
+    Returns the matched existing name if duplicate, None otherwise.
+    """
+    norm_new = normalize_name(new_name)
+    for entry in existing_entries:
+        norm_existing = normalize_name(entry['name'])
+        ratio = SequenceMatcher(None, norm_new, norm_existing).ratio()
+        if ratio >= DUPLICATE_THRESHOLD:
+            return entry['name']
+    return None
+
+
 def upload_image(image_bytes, destination_name):
     try:
         clean_name = destination_name.replace(" ", "-").lower()[:20]
@@ -40,62 +64,104 @@ def upload_image(image_bytes, destination_name):
         print(f"   ⚠️ Upload Failed: {e}")
         return None
 
-def generate_single_destination():
-    """Generates ONE completely random destination with its own unique theme."""
+def generate_single_destination(existing_entries: list[dict]) -> dict | None:
+    """
+    Generates ONE completely random destination with its own unique theme.
+    existing_entries: list of {"name": ..., "country": ...} dicts from the DB + this batch.
+    Returns {"name": ..., "country": ...} if successful, or None if failed.
+    """
 
     # 1. Randomize EVERYTHING for this single slot
     c_region = random.choice(list(REGION_THEMES.keys()))
+    # c_region = "Japan & East Asia"
     c_theme = random.choice(REGION_THEMES[c_region])
     c_style = random.choice(TRAVEL_STYLES)
 
     print(f"🎲 Rolling: {c_theme} in {c_region} ({c_style})...")
 
     destination_data = None
+    max_dedup_attempts = 3  # How many times to retry if we get a duplicate
+    avoid_names = []  # Names to explicitly tell Gemini to avoid (built up on retries)
 
-    # 2. Text Generation (Retry Logic)
-    for _ in range(3):
-        try:
-            prompt_text = (
-                f"Generate 1 real, specific travel bucket list destination in {c_region} "
-                f"that features {c_theme}. It must be perfect for {c_style}. "
-                "Do not invent places. Return JSON with fields: name, location, description, tags, imagePrompt, isPersonalized, country, region. "
-                "The 'country' field must be the exact country name (e.g., 'Japan', 'Thailand', 'Italy'). "
-                "The 'region' field must be an array containing one or more of these exact values where applicable: 'Oceania', 'East Asia', 'Middle East', 'South East Asia', 'Europe', 'North America', 'South America', 'Central America', 'Africa'. Most destinations belong to one region, but some may belong to multiple."
-            )
+    # 2. Text Generation (with dedup retries)
+    for dedup_attempt in range(max_dedup_attempts):
+        # Extra hint on retry to push Gemini away from the duplicate
+        retry_hint = ""
+        if dedup_attempt > 0:
+            retry_hint = " Pick a lesser-known or more unusual destination this time."
 
-            response = client.models.generate_content(
-                model='gemini-2.5-flash-lite',
-                contents=prompt_text,
-                config=types.GenerateContentConfig(
-                    response_mime_type='application/json',
-                    temperature=1.0,
-                    response_schema={
-                        "type": "OBJECT",
-                        "properties": {
-                            "name": {"type": "STRING"},
-                            "location": {"type": "STRING"},
-                            "description": {"type": "STRING"},
-                            "tags": {"type": "ARRAY", "items": {"type": "STRING"}},
-                            "imagePrompt": {"type": "STRING"},
-                            "isPersonalized": {"type": "BOOLEAN"},
-                            "country": {"type": "STRING"},
-                            "region": {"type": "ARRAY", "items": {"type": "STRING"}}
-                        },
-                        "required": ["name", "location", "description", "tags", "imagePrompt", "isPersonalized", "country", "region"]
-                    }
+        # Build avoid text from same-country names (only on retries, once we know the country)
+        avoid_text = ""
+        if avoid_names:
+            # On retry: filter existing entries to same country + any previously generated dupes
+            country = avoid_names[0].get('_country', '')
+            same_country_names = [e['name'] for e in existing_entries if e.get('country', '').lower() == country.lower()]
+            all_avoid = same_country_names + [n['name'] for n in avoid_names]
+            # Deduplicate the list
+            all_avoid = list(dict.fromkeys(all_avoid))
+            avoid_text = f" Do NOT generate any of these already-existing destinations: {', '.join(all_avoid)}."
+
+        for _ in range(3):  # API retry logic (for errors)
+            try:
+                prompt_text = (
+                    f"Generate 1 real, specific travel bucket list destination in {c_region} "
+                    f"that features {c_theme}. It must be perfect for {c_style}. "
+                    "Do not invent places. Return JSON with fields: name, location, description, tags, imagePrompt, isPersonalized, country, region. "
+                    "The 'country' field must be the exact country name (e.g., 'Japan', 'Thailand', 'Italy'). "
+                    "The 'region' field must be an array containing one or more of these exact values where applicable: "
+                    "'Oceania', 'East Asia', 'Middle East', 'South East Asia', 'Europe', 'North America', 'South America', 'Central America', 'Africa'. "
+                    f"Most destinations belong to one region, but some may belong to multiple.{avoid_text}{retry_hint}"
                 )
-            )
-            destination_data = json.loads(response.text)
+
+                response = client.models.generate_content(
+                    model='gemini-2.5-flash-lite',
+                    contents=prompt_text,
+                    config=types.GenerateContentConfig(
+                        response_mime_type='application/json',
+                        temperature=1.0,
+                        response_schema={
+                            "type": "OBJECT",
+                            "properties": {
+                                "name": {"type": "STRING"},
+                                "location": {"type": "STRING"},
+                                "description": {"type": "STRING"},
+                                "tags": {"type": "ARRAY", "items": {"type": "STRING"}},
+                                "imagePrompt": {"type": "STRING"},
+                                "isPersonalized": {"type": "BOOLEAN"},
+                                "country": {"type": "STRING"},
+                                "region": {"type": "ARRAY", "items": {"type": "STRING"}}
+                            },
+                            "required": ["name", "location", "description", "tags", "imagePrompt", "isPersonalized", "country", "region"]
+                        }
+                    )
+                )
+                destination_data = json.loads(response.text)
+                break
+            except Exception as e:
+                print(f"   ⚠️ Text Error: {e}. Retrying...")
+                time.sleep(2)
+
+        if not destination_data:
+            print("   ❌ Text failed. Skipping.")
+            return None
+
+        # 3. Fuzzy duplicate check (against ALL existing names, not just same country)
+        matched = is_duplicate(destination_data['name'], existing_entries)
+        if matched:
+            print(f"   🔁 Duplicate detected: '{destination_data['name']}' ≈ '{matched}'. Retrying ({dedup_attempt + 1}/{max_dedup_attempts})...")
+            # Track this name + its country so next retry can build a targeted avoid list
+            avoid_names.append({'name': destination_data['name'], '_country': destination_data.get('country', '')})
+            destination_data = None
+            continue
+        else:
+            # Not a duplicate, proceed
             break
-        except Exception as e:
-            print(f"   ⚠️ Text Error: {e}. Retrying...")
-            time.sleep(2)
 
     if not destination_data:
-        print("   ❌ Text failed. Skipping.")
-        return
+        print("   ❌ Could not generate a unique destination after retries. Skipping.")
+        return None
 
-    # 3. Image Generation
+    # 4. Image Generation
     lighting = random.choice(["soft morning light", "golden hour", "moody overcast", "blue hour"])
     vibe = random.choice(["peaceful", "vibrant", "cinematic", "ethereal"])
 
@@ -120,6 +186,7 @@ def generate_single_destination():
                 destination_data['imageUrl'] = public_url
                 add_destination(destination_data)
                 print(f"   ✅ SUCCESS: {destination_data['name']}")
+                return {"name": destination_data['name'], "country": destination_data.get('country', '')}
         else:
             print("   ❌ No image.")
 
@@ -129,13 +196,21 @@ def generate_single_destination():
             print("   ⏳ Rate Limit. Sleeping 30s...")
             time.sleep(30)
 
+    return None
+
 def generate_batch():
-    print("🚀 Starting Batch (Generating 10 distinct items)...")
+    # Fetch all existing destination names + countries once at the start
+    existing_entries = get_all_destination_names()
+    print(f"📋 Loaded {len(existing_entries)} existing destinations for dedup check.")
+    print("🚀 Starting Batch (Generating 10 distinct items)...\n")
 
     for _ in range(10):
-        generate_single_destination()
+        new_entry = generate_single_destination(existing_entries)
+        # Add the new entry to the in-memory list so we also avoid duplicates within this batch
+        if new_entry:
+            existing_entries.append(new_entry)
         time.sleep(2) # Pause between items
 
 if __name__ == "__main__":
     generate_batch()
-    print("🎉 Done.")
+    print("\n🎉 Done.")

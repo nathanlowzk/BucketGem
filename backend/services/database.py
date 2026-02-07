@@ -1,9 +1,7 @@
 import os
-import json
 from supabase import create_client, Client
 from dotenv import load_dotenv
 import random
-import requests
 
 load_dotenv()
 
@@ -51,6 +49,19 @@ def add_destination(dest):
     except Exception as e:
         print(f"❌ Error saving to Supabase: {e}")
         return None
+
+def get_all_destination_names():
+    """
+    Fetches all destination names and countries from the database.
+    Used by seed.py to check for duplicates before generating new destinations.
+    Returns a list of dicts: [{"name": "...", "country": "..."}, ...]
+    """
+    try:
+        response = supabase.table('destinations').select('name, country').execute()
+        return response.data if response.data else []
+    except Exception as e:
+        print(f"Error fetching destination names: {e}")
+        return []
 
 def get_random_batch(limit=4):
     """
