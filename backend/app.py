@@ -7,6 +7,7 @@ from routes.newsletter import newsletter_bp
 from routes.itinerary import itinerary_bp
 from routes.trips import trips_bp
 from routes.saved_destinations import saved_destinations_bp
+from routes.user import user_bp
 
 load_dotenv()
 
@@ -19,6 +20,7 @@ app.register_blueprint(newsletter_bp)
 app.register_blueprint(itinerary_bp)
 app.register_blueprint(trips_bp)
 app.register_blueprint(saved_destinations_bp)
+app.register_blueprint(user_bp)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

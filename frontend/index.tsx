@@ -14,6 +14,7 @@ import { Trips } from './src/components/Trips';
 import { SignIn } from './src/auth/sign_in';
 import { Registration } from './src/auth/registration';
 import { About } from './src/components/About';
+import { Profile } from './src/components/Profile';
 import { API_BASE_URL } from './src/lib/api';
 
 // --- Types & Interfaces ---
@@ -33,7 +34,7 @@ function VoyagerApp() {
   const [loading, setLoading] = useState(true);
   const [personalized, setPersonalized] = useState(false);
   const [savedDestinations, setSavedDestinations] = useState<Destination[]>([]);
-  const [currentView, setCurrentView] = useState<'explore' | 'passport' | 'tripForm' | 'trips' | 'signIn' | 'registration' | 'about'>('explore');
+  const [currentView, setCurrentView] = useState<'explore' | 'passport' | 'tripForm' | 'trips' | 'signIn' | 'registration' | 'about' | 'profile'>('explore');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [trips, setTrips] = useState<TripPlan[]>([]);
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
@@ -153,10 +154,23 @@ function VoyagerApp() {
   // Handle user sign out
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    // Clear user-specific data from state
     setSavedDestinations([]);
     setTrips([]);
     setCurrentView('explore');
+  };
+
+  // Handle account deletion
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    try {
+      await fetch(`${API_BASE_URL}/api/user/${user.id}`, { method: 'DELETE' });
+      await supabase.auth.signOut();
+      setSavedDestinations([]);
+      setTrips([]);
+      setCurrentView('explore');
+    } catch (err) {
+      console.error('Failed to delete account:', err);
+    }
   };
 
   // Helper function for actions that require authentication
@@ -615,15 +629,12 @@ function VoyagerApp() {
         <div className="flex items-center gap-4">
           <div className="hidden md:flex items-center gap-6">
             {user ? (
-              <>
-                <span className="text-sm text-slate-600">
-                  Hi, {user.user_metadata?.full_name || user.email}
-                </span>
-                <Button variant="outline" className="flex items-center gap-2" onClick={handleSignOut}>
-                  <Lucide.LogOut className="w-4 h-4" />
-                  Sign Out
-                </Button>
-              </>
+              <button
+                onClick={() => setCurrentView('profile')}
+                className="w-9 h-9 bg-slate-900 rounded-full flex items-center justify-center hover:bg-slate-700 transition-colors"
+              >
+                <Lucide.User className="w-4 h-4 text-white" />
+              </button>
             ) : (
               <Button variant="outline" className="flex items-center gap-2" onClick={() => setCurrentView('signIn')}>
                 <Lucide.LogIn className="w-4 h-4" />
@@ -674,13 +685,13 @@ function VoyagerApp() {
             </button>
             <div className="border-t border-slate-100 pt-4 flex flex-col gap-3">
               {user ? (
-                <>
-                  <span className="text-sm text-slate-500">Hi, {user.user_metadata?.full_name || user.email}</span>
-                  <Button variant="outline" className="w-full flex items-center justify-center gap-2" onClick={() => { handleSignOut(); setMobileMenuOpen(false); }}>
-                    <Lucide.LogOut className="w-4 h-4" />
-                    Sign Out
-                  </Button>
-                </>
+                <button
+                  onClick={() => { setCurrentView('profile'); setMobileMenuOpen(false); }}
+                  className="w-full text-left text-base font-medium py-2 flex items-center gap-2 text-slate-700"
+                >
+                  <Lucide.User className="w-4 h-4" />
+                  Profile
+                </button>
               ) : (
                 <Button variant="outline" className="w-full flex items-center justify-center gap-2" onClick={() => { setCurrentView('signIn'); setMobileMenuOpen(false); }}>
                   <Lucide.LogIn className="w-4 h-4" />
@@ -810,6 +821,12 @@ function VoyagerApp() {
           />
         ) : currentView === 'about' ? (
           <About onNavigateToExplore={() => setCurrentView('explore')} />
+        ) : currentView === 'profile' && user ? (
+          <Profile
+            user={user}
+            onSignOut={handleSignOut}
+            onDeleteAccount={handleDeleteAccount}
+          />
         ) : (
           <Trips
             trips={trips}

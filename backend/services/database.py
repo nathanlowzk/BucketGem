@@ -5,20 +5,15 @@ import random
 
 load_dotenv()
 
-# Initialize Supabase Client (anon key for regular operations)
+# Initialize Supabase Client with service role key (bypasses RLS)
 url: str = os.environ.get("SUPABASE_URL")
-key: str = os.environ.get("SUPABASE_KEY")
 service_role_key: str = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 
-if not url or not key:
+if not url or not service_role_key:
     raise ValueError("❌ Supabase credentials missing. Check your .env file.")
 
-supabase: Client = create_client(url, key)
-
-# Create admin client for user operations (requires service role key)
-supabase_admin: Client = None
-if service_role_key and service_role_key != "your_service_role_key_here":
-    supabase_admin = create_client(url, service_role_key)
+supabase: Client = create_client(url, service_role_key)
+supabase_admin: Client = supabase
 
 def init_db():
     # With Supabase, we don't need to "create" the DB file locally.
