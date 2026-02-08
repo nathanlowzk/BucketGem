@@ -625,9 +625,12 @@ export function TripPlanningForm({ onSubmit, onCancel, savedDestinations, google
     setSpecificDestinations(prev => prev.filter(d => d.id !== id));
   };
 
+  // Only show saved destinations when the user has selected an actual country/region from the list
+  const isValidDestination = DESTINATIONS.some(d => d.name.toLowerCase() === destination.toLowerCase());
+
   // Filter saved destinations by selected country/region
   const filteredSavedDestinations = savedDestinations.filter(dest => {
-    if (!destination) return false;
+    if (!destination || !isValidDestination) return false;
 
     const isRegion = REGIONS.includes(destination);
 

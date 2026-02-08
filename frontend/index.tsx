@@ -34,6 +34,7 @@ function VoyagerApp() {
   const [personalized, setPersonalized] = useState(false);
   const [savedDestinations, setSavedDestinations] = useState<Destination[]>([]);
   const [currentView, setCurrentView] = useState<'explore' | 'passport' | 'tripForm' | 'trips' | 'signIn' | 'registration' | 'about'>('explore');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [trips, setTrips] = useState<TripPlan[]>([]);
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
 
@@ -207,6 +208,13 @@ function VoyagerApp() {
 
     const isAlreadySaved = savedDestinations.some(d => d.id === dest.id);
 
+    // Optimistic update
+    if (isAlreadySaved) {
+      setSavedDestinations(prev => prev.filter(d => d.id !== dest.id));
+    } else {
+      setSavedDestinations(prev => [...prev, dest]);
+    }
+
     try {
       if (isAlreadySaved) {
         const res = await fetch(`${API_BASE_URL}/api/saved-destinations`, {
@@ -214,8 +222,9 @@ function VoyagerApp() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: user.id, destinationId: dest.id }),
         });
-        if (res.ok) {
-          setSavedDestinations(prev => prev.filter(d => d.id !== dest.id));
+        if (!res.ok) {
+          // Revert on failure
+          setSavedDestinations(prev => [...prev, dest]);
         }
       } else {
         const res = await fetch(`${API_BASE_URL}/api/saved-destinations`, {
@@ -223,11 +232,18 @@ function VoyagerApp() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: user.id, destinationId: dest.id }),
         });
-        if (res.ok) {
-          setSavedDestinations(prev => [...prev, dest]);
+        if (!res.ok) {
+          // Revert on failure
+          setSavedDestinations(prev => prev.filter(d => d.id !== dest.id));
         }
       }
     } catch (err) {
+      // Revert on error
+      if (isAlreadySaved) {
+        setSavedDestinations(prev => [...prev, dest]);
+      } else {
+        setSavedDestinations(prev => prev.filter(d => d.id !== dest.id));
+      }
       console.error('Failed to toggle saved destination:', err);
       showToast("Failed to update saved destination", 'error');
     }
@@ -596,28 +612,86 @@ function VoyagerApp() {
           </button>
         </div>
 
-        <div className="flex items-center gap-6">
-          {user ? (
-            // User is logged in - show their name and sign out button
-            <>
-              <span className="text-sm text-slate-600 hidden sm:block">
-                Hi, {user.user_metadata?.full_name || user.email}
-              </span>
-              <Button variant="outline" className="flex items-center gap-2" onClick={handleSignOut}>
-                <Lucide.LogOut className="w-4 h-4" />
-                Sign Out
+        <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-6">
+            {user ? (
+              <>
+                <span className="text-sm text-slate-600">
+                  Hi, {user.user_metadata?.full_name || user.email}
+                </span>
+                <Button variant="outline" className="flex items-center gap-2" onClick={handleSignOut}>
+                  <Lucide.LogOut className="w-4 h-4" />
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" className="flex items-center gap-2" onClick={() => setCurrentView('signIn')}>
+                <Lucide.LogIn className="w-4 h-4" />
+                Sign In
               </Button>
-            </>
-          ) : (
-            // User is not logged in - show sign in button
-            <Button variant="outline" className="flex items-center gap-2" onClick={() => setCurrentView('signIn')}>
-              <Lucide.LogIn className="w-4 h-4" />
-              Sign In
-            </Button>
-          )}
-          <Button variant="primary" className="hidden sm:flex" onClick={() => requireAuth(handleNewTrip, "Please sign in to plan a trip")}>Plan Trip</Button>
+            )}
+            <Button variant="primary" onClick={() => requireAuth(handleNewTrip, "Please sign in to plan a trip")}>Plan Trip</Button>
+          </div>
+
+          {/* Mobile hamburger */}
+          <button
+            className="md:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <Lucide.X className="w-6 h-6" /> : <Lucide.Menu className="w-6 h-6" />}
+          </button>
         </div>
       </nav>
+
+      {/* Mobile menu overlay */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
+          <div className="fixed top-20 left-0 right-0 bg-white border-b border-slate-200 shadow-lg p-6 flex flex-col gap-4 z-50">
+            <button
+              onClick={() => { setCurrentView('explore'); setMobileMenuOpen(false); }}
+              className={`text-left text-base font-medium py-2 transition-colors ${currentView === 'explore' ? 'text-emerald-600' : 'text-slate-700'}`}
+            >
+              Explore
+            </button>
+            <button
+              onClick={() => { requireAuth(() => setCurrentView('passport'), "Please sign in to view your Passport"); setMobileMenuOpen(false); }}
+              className={`text-left text-base font-medium py-2 transition-colors ${currentView === 'passport' ? 'text-emerald-600' : 'text-slate-700'}`}
+            >
+              Passport
+            </button>
+            <button
+              onClick={() => { requireAuth(() => setCurrentView('trips'), "Please sign in to view your Trips"); setMobileMenuOpen(false); }}
+              className={`text-left text-base font-medium py-2 transition-colors ${currentView === 'trips' ? 'text-emerald-600' : 'text-slate-700'}`}
+            >
+              Trips
+            </button>
+            <button
+              onClick={() => { setCurrentView('about'); setMobileMenuOpen(false); }}
+              className={`text-left text-base font-medium py-2 transition-colors ${currentView === 'about' ? 'text-emerald-600' : 'text-slate-700'}`}
+            >
+              About
+            </button>
+            <div className="border-t border-slate-100 pt-4 flex flex-col gap-3">
+              {user ? (
+                <>
+                  <span className="text-sm text-slate-500">Hi, {user.user_metadata?.full_name || user.email}</span>
+                  <Button variant="outline" className="w-full flex items-center justify-center gap-2" onClick={() => { handleSignOut(); setMobileMenuOpen(false); }}>
+                    <Lucide.LogOut className="w-4 h-4" />
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <Button variant="outline" className="w-full flex items-center justify-center gap-2" onClick={() => { setCurrentView('signIn'); setMobileMenuOpen(false); }}>
+                  <Lucide.LogIn className="w-4 h-4" />
+                  Sign In
+                </Button>
+              )}
+              <Button variant="primary" className="w-full" onClick={() => { requireAuth(handleNewTrip, "Please sign in to plan a trip"); setMobileMenuOpen(false); }}>Plan Trip</Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="pt-20">
         {currentView === 'explore' ? (
