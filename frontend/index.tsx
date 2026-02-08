@@ -826,6 +826,7 @@ function VoyagerApp() {
             user={user}
             onSignOut={handleSignOut}
             onDeleteAccount={handleDeleteAccount}
+            onUserUpdate={(updatedUser) => setUser(updatedUser)}
           />
         ) : (
           <Trips
