@@ -247,6 +247,11 @@ export function Trips({ trips, onDeleteTrip, onPlanTrip, onEditTrip }: TripsProp
           </Button>
         </div>
       ) : (
+        <>
+        <div className="flex items-center justify-center gap-2 mb-6 animate-bounce text-slate-400 text-sm font-light">
+          <Lucide.MousePointerClick className="w-4 h-4" />
+          <span>Click on a trip to view the itinerary</span>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {trips.map(trip => {
             const symbol = CURRENCY_SYMBOLS[trip.currency] || trip.currency;
@@ -321,6 +326,7 @@ export function Trips({ trips, onDeleteTrip, onPlanTrip, onEditTrip }: TripsProp
             );
           })}
         </div>
+        </>
       )}
 
       {/* Trip Detail Modal */}

@@ -683,22 +683,23 @@ function VoyagerApp() {
             >
               About
             </button>
+            {user && (
+              <button
+                onClick={() => { setCurrentView('profile'); setMobileMenuOpen(false); }}
+                className={`text-left text-base font-medium py-2 transition-colors flex items-center gap-2 ${currentView === 'profile' ? 'text-emerald-600' : 'text-slate-700'}`}
+              >
+                <Lucide.User className="w-4 h-4" />
+                Profile
+              </button>
+            )}
             <div className="border-t border-slate-100 pt-4 flex flex-col gap-3">
-              {user ? (
-                <button
-                  onClick={() => { setCurrentView('profile'); setMobileMenuOpen(false); }}
-                  className="w-full text-left text-base font-medium py-2 flex items-center gap-2 text-slate-700"
-                >
-                  <Lucide.User className="w-4 h-4" />
-                  Profile
-                </button>
-              ) : (
+              <Button variant="primary" className="w-full justify-center" onClick={() => { requireAuth(handleNewTrip, "Please sign in to plan a trip"); setMobileMenuOpen(false); }}>Plan Trip</Button>
+              {!user && (
                 <Button variant="outline" className="w-full flex items-center justify-center gap-2" onClick={() => { setCurrentView('signIn'); setMobileMenuOpen(false); }}>
                   <Lucide.LogIn className="w-4 h-4" />
                   Sign In
                 </Button>
               )}
-              <Button variant="primary" className="w-full" onClick={() => { requireAuth(handleNewTrip, "Please sign in to plan a trip"); setMobileMenuOpen(false); }}>Plan Trip</Button>
             </div>
           </div>
         </div>
