@@ -114,7 +114,7 @@ def generate_single_destination(existing_entries: list[dict]) -> dict | None:
                 )
 
                 response = client.models.generate_content(
-                    model='gemini-2.5-flash-lite',
+                    model='gemini-3-flash-preview',
                     contents=prompt_text,
                     config=types.GenerateContentConfig(
                         response_mime_type='application/json',

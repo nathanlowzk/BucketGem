@@ -63,7 +63,7 @@ def generate_clarifying_questions(trip_data: dict) -> list:
 
     try:
         response = client.models.generate_content(
-            model='gemini-2.5-flash-lite',
+            model='gemini-3-flash-preview',
             contents=prompt_text,
             config=types.GenerateContentConfig(
                 response_mime_type='application/json',
@@ -171,7 +171,7 @@ def generate_itinerary(trip_data: dict) -> dict:
 
     try:
         response = client.models.generate_content(
-            model='gemini-2.5-flash-lite',
+            model='gemini-3-flash-preview',
             contents=prompt_text,
             config=types.GenerateContentConfig(
                 response_mime_type='application/json',
